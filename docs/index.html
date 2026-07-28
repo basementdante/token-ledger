@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Token Ledger — Where Your Claude Code Tokens Actually Go. Measured.</title>
+  <meta name="description" content="The measured token ledger for Claude Code: 69 optimizations with real token costs, a 25-row measured cost table, and a config cut that drops your startup floor 44%. Edition 1, July 2026.">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0a0a0a;
+      --bg-2:        #111111;
+      --bg-3:        #181818;
+      --amber:       #e8d5a3;
+      --amber-dim:   #9a8a6a;
+      --amber-muted: #5a4e38;
+      --green:       #4ade80;
+      --green-dim:   #22c55e;
+      --red:         #f87171;
+      --white:       #ffffff;
+      --border:      #252525;
+      --border-dim:  #1d1d1d;
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--amber);
+      font-family: 'Courier New', Courier, monospace;
+      line-height: 1.65;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Skip nav ── */
+    .skip-link {
+      position: absolute;
+      top: -48px;
+      left: 0;
+      background: var(--green);
+      color: #000;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      text-decoration: none;
+      z-index: 200;
+      font-family: inherit;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+    }
+
+    section {
+      padding: 4rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Typography ── */
+    h1 {
+      font-size: clamp(1.6rem, 5.5vw, 2.6rem);
+      line-height: 1.15;
+      color: var(--white);
+      margin-bottom: 1.25rem;
+      letter-spacing: -0.01em;
+    }
+
+    h2 {
+      font-size: 0.72rem;
+      color: var(--green);
+      margin-bottom: 1.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+    }
+    h2::before { content: '> '; color: var(--green-dim); }
+
+    h3 {
+      font-size: 0.9rem;
+      color: var(--amber);
+      margin-bottom: 0.4rem;
+    }
+
+    p { margin-bottom: 1rem; }
+    p:last-child { margin-bottom: 0; }
+
+    strong { color: var(--white); }
+
+    a { color: var(--green); }
+    a:hover { color: #86efac; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-block;
+      padding: 0.875rem 1.75rem;
+      background: var(--green);
+      color: #000;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: bold;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      min-height: 44px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: background 0.12s, outline-color 0.12s;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn:hover  { background: #86efac; }
+    .btn:focus  {
+      outline: 2px solid var(--green);
+      outline-offset: 3px;
+      background: #86efac;
+    }
+
+    .cta-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      margin-top: 2rem;
+    }
+
+    .cta-note {
+      font-size: 0.75rem;
+      color: var(--amber-dim);
+    }
+
+    /* ── Hero ── */
+    #hero {
+      padding: 5rem 0 4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      font-size: 0.7rem;
+      color: var(--green);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+    .eyebrow::before { content: '> '; color: var(--green-dim); }
+
+    .hero-sub {
+      font-size: 1rem;
+      color: var(--amber);
+      line-height: 1.7;
+      margin-bottom: 1rem;
+    }
+
+    .stat-box {
+      border-left: 2px solid var(--green);
+      background: var(--bg-2);
+      padding: 1rem 1.25rem;
+      font-size: 0.83rem;
+      color: var(--amber);
+      line-height: 1.7;
+      margin: 1.5rem 0;
+    }
+    .stat-box strong { color: var(--white); }
+
+    .alert-bar {
+      border: 1px solid var(--amber-muted);
+      background: var(--bg-3);
+      padding: 0.65rem 1rem;
+      font-size: 0.75rem;
+      color: var(--amber-dim);
+      margin-bottom: 2rem;
+    }
+    .alert-bar strong { color: var(--red); }
+
+    /* ── Terminal log ── */
+    .terminal {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--green);
+      padding: 1.5rem;
+      font-size: 0.79rem;
+      line-height: 1.85;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 1.5rem 0;
+    }
+
+    .t-header {
+      color: var(--amber-dim);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+
+    .log-date   { color: var(--amber-dim); }
+    .log-event  { color: var(--amber); }
+    .log-impact { color: var(--red); }
+    .log-ok     { color: var(--green); }
+    .log-indent { padding-left: 2ch; display: block; }
+
+    /* ── Tables ── */
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 1.25rem 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    th {
+      background: var(--bg-3);
+      color: var(--green);
+      text-align: left;
+      padding: 0.55rem 0.8rem;
+      border: 1px solid var(--border);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.55rem 0.8rem;
+      border: 1px solid var(--border);
+      color: var(--amber);
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td { background: var(--bg-2); }
+
+    .ch-num {
+      color: var(--amber-dim);
+      font-size: 0.7rem;
+      white-space: nowrap;
+      width: 2.5rem;
+    }
+
+    .ch-label {
+      color: var(--green);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-left: 0.4rem;
+    }
+
+    /* ── Blurred preview ── */
+    .row-blurred td {
+      filter: blur(4px);
+      user-select: none;
+      pointer-events: none;
+      color: var(--amber);
+    }
+
+    .unlock-overlay {
+      text-align: center;
+      padding: 2.5rem 1rem 0.5rem;
+      background: linear-gradient(to bottom, rgba(10,10,10,0) 0%, var(--bg) 40%);
+      margin-top: -2px;
+    }
+    .unlock-label {
+      font-size: 0.72rem;
+      color: var(--amber-dim);
+      margin-bottom: 0.75rem;
+    }
+
+    /* ── Pricing ── */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1px;
+      margin: 1.75rem 0 1rem;
+      border: 1px solid var(--border);
+    }
+
+    .tier {
+      background: var(--bg-2);
+      padding: 1.5rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      position: relative;
+    }
+
+    .tier.popular {
+      background: var(--bg-3);
+      border-top: 2px solid var(--green);
+    }
+
+    .popular-badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--green);
+      color: #000;
+      font-size: 0.6rem;
+      font-weight: bold;
+      padding: 0.2rem 0.55rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .tier-name {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--amber-dim);
+    }
+
+    .tier-price {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .price-now {
+      font-size: 2rem;
+      color: var(--white);
+      line-height: 1;
+    }
+
+    .price-was {
+      font-size: 0.88rem;
+      color: var(--amber-muted);
+      text-decoration: line-through;
+    }
+
+    .save-badge {
+      font-size: 0.62rem;
+      background: var(--red);
+      color: var(--white);
+      padding: 0.15rem 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    .tier-list {
+      list-style: none;
+      font-size: 0.77rem;
+      color: var(--amber-dim);
+      line-height: 1.8;
+      flex: 1;
+    }
+    .tier-list li::before { content: '+ '; color: var(--green); }
+
+    .tier .btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+    }
+
+    .pricing-note {
+      font-size: 0.74rem;
+      color: var(--amber-dim);
+      margin-top: 0.5rem;
+    }
+
+    /* ── Author ── */
+    .author-block {
+      border-left: 2px solid var(--amber-muted);
+      padding-left: 1.25rem;
+      font-size: 0.86rem;
+      color: var(--amber-dim);
+      line-height: 1.8;
+    }
+    .author-block p { margin-bottom: 0.75rem; }
+
+    /* ── FAQ ── */
+    details {
+      border: 1px solid var(--border);
+      margin-bottom: 2px;
+    }
+
+    summary {
+      padding: 0.875rem 1rem;
+      cursor: pointer;
+      color: var(--amber);
+      font-size: 0.86rem;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      min-height: 44px;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::before {
+      content: '[+]';
+      color: var(--green);
+      flex-shrink: 0;
+      font-size: 0.75rem;
+    }
+    details[open] summary::before { content: '[-]'; }
+    details[open] summary { border-bottom: 1px solid var(--border); }
+
+    .faq-body {
+      padding: 1rem;
+      font-size: 0.83rem;
+      color: var(--amber-dim);
+      line-height: 1.75;
+    }
+    .faq-body p { margin-bottom: 0; }
+
+    /* ── Footer ── */
+    footer {
+      padding: 3.5rem 0 2rem;
+    }
+
+    .email-capture {
+      margin-bottom: 2rem;
+    }
+
+    .disclaimer {
+      border-top: 1px solid var(--border);
+      padding-top: 1.25rem;
+      font-size: 0.68rem;
+      color: var(--amber-muted);
+      line-height: 1.8;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 520px) {
+      .pricing-grid {
+        grid-template-columns: 1fr;
+        border: none;
+        gap: 0.5rem;
+      }
+      .tier {
+        border: 1px solid var(--border);
+      }
+      .tier.popular {
+        border-color: var(--green);
+      }
+      .cta-group {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<main id="main-content">
+
+  <!-- ══════════════════════════════════════
+       1. HERO
+  ══════════════════════════════════════ -->
+  <section id="hero">
+    <div class="container">
+      <p class="eyebrow">Edition 1 — July 2026 — 48-Hour Launch Price</p>
+
+      <h1>You burned 4 of your 5 hours in 3 prompts.</h1>
+
+      <p class="hero-sub">
+        That is not a usage problem. It is an architecture problem. Every CLAUDE.md you load, every MCP server you connect, every subagent you spawn fans out to 8–12 internal API calls before it does one line of work.
+      </p>
+      <p class="hero-sub">
+        <strong>The Token Ledger</strong> is the measured cost table for Claude Code plus 69 optimizations built on it. The documented config cut drops the startup floor 44% by arithmetic alone — 82% was observed on the author's machine, and the book tells you exactly why that second number carries a version caveat.
+      </p>
+
+      <div class="stat-box">
+        <strong>Numbers, not adjectives:</strong> Since late March 2026, practitioners report identical work consuming 8–10% of a daily window instead of 3% — a rough 3x multiplier. A single command can fan out to 30,000+ tokens. Anthropic publicly called the fix its <strong>"top priority."</strong>
+      </div>
+
+      <div class="alert-bar">
+        <strong>48-hour launch pricing ends soon.</strong> After that, T1 returns to $39 · T2 to $79 · T3 to $199.
+      </div>
+
+      <div class="cta-group">
+        <a href="https://manna.lemonsqueezy.com/checkout/custom/bc3ee8c5-5dd8-4acb-a2d0-9ed7d3afa8eb?signature=7af0b5eae0bc4a011200e742578690fd6f5433804714c37476d47ee61d31599c" class="btn">Get Playbook + Kit — $49</a>
+        <span class="cta-note">Most popular · save 38% · instant download</span>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════
+       2. PAIN: DATED TIMELINE
+  ══════════════════════════════════════ -->
+  <section id="pain" aria-labelledby="pain-h">
+    <div class="container">
+      <h2 id="pain-h">The timeline that broke your week</h2>
+
+      <p>
+        This is not one bad update. Every time Anthropic adjusted the limit floor, your workflow needed a new calibration. Most developers found out mid-week, with the cap already burned.
+      </p>
+
+      <div class="terminal" role="log" aria-label="Claude Code usage limits change history">
+        <p class="t-header"># claude-code-limits-history.log &nbsp;— &nbsp;2026</p>
+
+        <p>
+          <span class="log-date">[2026-03-31]</span>
+          <span class="log-event"> ACKNOWLEDGMENT — users hitting limits "way faster than expected"</span>
+        </p>
+        <span class="log-indent log-impact">IMPACT: practitioners report identical work at 8–10% of daily window (was ~3%) — a rough 3x.</span>
+        <span class="log-indent log-impact">STATUS: Anthropic publicly called the fix its "top priority." Weekly cap burned by Tuesday.</span>
+
+        <p style="margin-top:0.75rem;">
+          <span class="log-date">[2026-05-06]</span>
+          <span class="log-event"> 5H_LIMITS_DOUBLED — five-hour windows permanently raised</span>
+        </p>
+        <span class="log-indent log-impact">SHIFT: the weekly cap is now the binding constraint for anyone working 3+ days a week.</span>
+
+        <p style="margin-top:0.75rem;">
+          <span class="log-date">[2026-05-13]</span>
+          <span class="log-event"> LIMIT_INCREASE — weekly quota raised +50% (promotional)</span>
+        </p>
+        <span class="log-indent log-ok">CONTEXT: OpenAI simultaneously offered enterprise Claude Code customers two months of free Codex.</span>
+        <span class="log-indent log-impact">REALITY: +50% headroom does not help if session architecture burns 3x what it should.</span>
+
+        <p style="margin-top:0.75rem;">
+          <span class="log-date">[2026-06-15]</span>
+          <span class="log-event"> CREDIT_SPLIT_CANCELLED — programmatic billing split reversed on its effective date</span>
+        </p>
+        <span class="log-indent log-impact">IMPACT: announced May 14, cancelled June 15. CI and `claude -p` still eat your weekly cap. Guides written in between are advising a migration with no destination.</span>
+
+        <p style="margin-top:0.75rem;">
+          <span class="log-date">[2026-07-16]</span>
+          <span class="log-event"> TOP_UP — Anthropic, OpenAI, and Cursor refill quotas within hours of each other</span>
+        </p>
+        <span class="log-indent log-impact">SIGNAL: a refill is not a raise. The meter reset; the ceiling did not move.</span>
+
+        <p style="margin-top:0.75rem;">
+          <span class="log-date">[2026-07-28]</span>
+          <span class="log-event"> TODAY — five entries in four months, one of them a reversal. Your cap is burning faster than it should.</span>
+        </p>
+        <span class="log-indent log-ok">FIX AVAILABLE: The Token Ledger — Edition 1. 40+ optimizations. Measured. Dated.</span>
+      </div>
+
+      <p style="font-size:0.82rem; color:var(--amber-dim);">
+        The first edition documents every change through July 2026. Appendix A is a dated changelog. T3 includes 12 months of edition updates when the floor moves again.
+      </p>
+
+      <div class="cta-group">
+        <a href="https://manna.lemonsqueezy.com/checkout/custom/bc3ee8c5-5dd8-4acb-a2d0-9ed7d3afa8eb?signature=7af0b5eae0bc4a011200e742578690fd6f5433804714c37476d47ee61d31599c" class="btn">Get the Ledger — $49</a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════
+       3. WHAT'S INSIDE
+  ══════════════════════════════════════ -->
+  <section id="contents" aria-labelledby="contents-h">
+    <div class="container">
+      <h2 id="contents-h">What's inside</h2>
+
+      <p>
+        11 chapters and 2 appendices. Every chapter opens with the pain in one paragraph, gives the fix, shows the exact steps and configs, then ends with a "what you save" line.
+      </p>
+
+      <div class="table-wrap">
+        <table aria-label="Table of contents">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Chapter</th>
+              <th scope="col">What you get</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="ch-num">01</td>
+              <td>Where Your Week Actually Goes</td>
+              <td>Quota mechanics: 5h windows, weekly caps, model multipliers, the dated timeline. Hook: "4 of 5 hours in 3 prompts."</td>
+            </tr>
+            <tr>
+              <td class="ch-num">02</td>
+              <td>The Token Ledger <span class="ch-label">[centerpiece]</span></td>
+              <td>Measured accounting table — what every operation costs. System prompt, CLAUDE.md bloat, MCP schemas, plugin overhead, memory files, tool fan-out, compaction. Real numbers from real logs.</td>
+            </tr>
+            <tr>
+              <td class="ch-num">03</td>
+              <td>The Context Bloat Audit</td>
+              <td>Measure your own overhead. CLAUDE.md, rules files, memory, plugins. Cut ruthlessly. Before/after from a 20-rule-file setup.</td>
+            </tr>
+            <tr>
+              <td class="ch-num">04</td>
+              <td>MCP &amp; Tool Overhead</td>
+              <td>The deferral myth-buster: schemas load on demand by default. The 5 configs that silently turn deferral off, and the real cost — tool results, not schemas.</td>
+            </tr>
+            <tr>
+              <td class="ch-num">05</td>
+              <td>Model &amp; Effort Routing</td>
+              <td>Haiku/Sonnet/Opus/Fable multipliers, effort levels, decision table: which task shapes route where. Copy-paste configs.</td>
+            </tr>
+            <tr>
+              <td class="ch-num">06</td>
+              <td>Cache Discipline</td>
+              <td>Prompt caching mechanics, TTL, the sins that break cache mid-session, how session length interacts with cost.</td>
+            </tr>
+            <tr>
+              <td class="ch-num">07</td>
+              <td>Context Hygiene</td>
+              <td>/compact vs /clear, grep-before-read, partial reads, session-per-task. Why re-reading files you just edited burns cache.</td>
+            </tr>
+            <tr>
+              <td class="ch-num">08</td>
+              <td>Subagents: Save or Burn?</td>
+              <td>When delegation saves main-context tokens vs when it duplicates work. Measured examples.</td>
+            </tr>
+            <tr>
+              <td class="ch-num">09</td>
+              <td>Agent Teams at 7x</td>
+              <td>Which task shapes repay 7x tokens (parallel review, multi-module features) and which never do. Cost/benefit table per shape.</td>
+            </tr>
+            <tr>
+              <td class="ch-num">10</td>
+              <td>Hooks as Enforcement</td>
+              <td>"CLAUDE.md is a request; a hook is a guarantee." Token-guard hook library walkthrough.</td>
+            </tr>
+            <tr>
+              <td class="ch-num">11</td>
+              <td>The 44% Playbook</td>
+              <td>Ordered checklist, full before/after case study, what to do this week.</td>
+            </tr>
+            <tr>
+              <td class="ch-num">A</td>
+              <td>Appendix A: What Changed</td>
+              <td>Dated changelog of every limit and quota change. The edition mechanism — why this guide does not go stale.</td>
+            </tr>
+            <tr>
+              <td class="ch-num">B</td>
+              <td>Appendix B: Measurement Scripts</td>
+              <td>Usage and reference for the scripts that produced the numbers in this book.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="cta-group">
+        <a href="https://manna.lemonsqueezy.com/checkout/custom/bc3ee8c5-5dd8-4acb-a2d0-9ed7d3afa8eb?signature=7af0b5eae0bc4a011200e742578690fd6f5433804714c37476d47ee61d31599c" class="btn">Get Playbook + Kit — $49</a>
+        <span class="cta-note">Includes all configs and scripts — not just the ebook</span>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════
+       4. LEDGER PREVIEW (blurred/redacted)
+  ══════════════════════════════════════ -->
+  <section id="preview" aria-labelledby="preview-h">
+    <div class="container">
+      <h2 id="preview-h">From the Token Ledger (preview)</h2>
+
+      <p>
+        This is the centerpiece table — what each operation actually costs, measured from real session logs. The full ledger has 25 measured rows; nothing like it is published anywhere else.
+      </p>
+
+      <div class="table-wrap">
+        <table aria-label="Token cost preview — full table available with purchase">
+          <thead>
+            <tr>
+              <th scope="col">Operation</th>
+              <th scope="col">Tokens (measured)</th>
+              <th scope="col">When you pay it</th>
+              <th scope="col">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Global CLAUDE.md (author's setup)</td>
+              <td>~3,124</td>
+              <td>every session</td>
+              <td>Paid before you type a word</td>
+            </tr>
+            <tr>
+              <td>Rules files — 20 files</td>
+              <td>~11,142</td>
+              <td>every session</td>
+              <td>None of them path-scoped, so all of them load</td>
+            </tr>
+            <tr class="row-blurred" aria-hidden="true">
+              <td>MCP schemas — worst case, deferral off</td>
+              <td>█████</td>
+              <td>████</td>
+              <td>████████ ██████ ████████ per turn</td>
+            </tr>
+            <tr class="row-blurred" aria-hidden="true">
+              <td>Tool fan-out — 8-agent subgraph</td>
+              <td>█████</td>
+              <td>████</td>
+              <td>████████ ██████████ ████ context</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="unlock-overlay">
+        <p class="unlock-label">40+ rows in the full table — unlocked with any tier</p>
+        <a href="https://manna.lemonsqueezy.com/checkout/custom/bc3ee8c5-5dd8-4acb-a2d0-9ed7d3afa8eb?signature=7af0b5eae0bc4a011200e742578690fd6f5433804714c37476d47ee61d31599c" class="btn">Unlock the full Ledger — $49</a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════
+       5. PRICING
+  ══════════════════════════════════════ -->
+  <section id="pricing" aria-labelledby="pricing-h">
+    <div class="container">
+      <h2 id="pricing-h">48-hour launch pricing</h2>
+
+      <p>
+        Each tier is a one-time purchase with instant download. Prices return to list after the launch window closes.
+      </p>
+
+      <div class="pricing-grid">
+
+        <!-- T1 -->
+        <div class="tier">
+          <p class="tier-name">T1 — Core</p>
+          <div class="tier-price">
+            <span class="price-now">$29</span>
+            <span class="price-was">$39</span>
+            <span class="save-badge">save 26%</span>
+          </div>
+          <ul class="tier-list">
+            <li>The Token Ledger ebook (PDF + EPUB)</li>
+            <li>All 11 chapters + 2 appendices</li>
+            <li>Full 40+ row measurement table</li>
+          </ul>
+          <a href="https://manna.lemonsqueezy.com/checkout/custom/edc3fe6a-5a86-49a4-9240-4c9725ffbe95?signature=f3cfaad85350458c3de2885f90153e6b5b21f00519b724d2e3b6fa46a64fdbf5" class="btn">Get Core — $29</a>
+        </div>
+
+        <!-- T2: target SKU -->
+        <div class="tier popular">
+          <span class="popular-badge" aria-label="Most popular tier">Most popular</span>
+          <p class="tier-name">T2 — Playbook + Kit</p>
+          <div class="tier-price">
+            <span class="price-now">$49</span>
+            <span class="price-was">$79</span>
+            <span class="save-badge">save 38%</span>
+          </div>
+          <ul class="tier-list">
+            <li>Everything in Core</li>
+            <li>Drop-in CLAUDE.md template</li>
+            <li>Token-guard hook library</li>
+            <li>Agent routing configs</li>
+            <li>Model routing decision table</li>
+            <li>Measurement scripts (Python)</li>
+          </ul>
+          <a href="https://manna.lemonsqueezy.com/checkout/custom/bc3ee8c5-5dd8-4acb-a2d0-9ed7d3afa8eb?signature=7af0b5eae0bc4a011200e742578690fd6f5433804714c37476d47ee61d31599c" class="btn">Get Playbook + Kit — $49</a>
+        </div>
+
+        <!-- T3 -->
+        <div class="tier">
+          <p class="tier-name">T3 — Everything</p>
+          <div class="tier-price">
+            <span class="price-now">$99</span>
+            <span class="price-was">$199</span>
+            <span class="save-badge">save 50%</span>
+          </div>
+          <ul class="tier-list">
+            <li>Everything in Playbook + Kit</li>
+            <li>12 months of edition updates</li>
+            <li>Launch-window email support</li>
+            <li>Agent Teams cost workbook</li>
+          </ul>
+          <a href="https://manna.lemonsqueezy.com/checkout/custom/b813d8ab-1dd1-42c7-a738-5545300f64d2?signature=80b6e1fec725eb18f4f2246cd39c11cc4762894b5d375cac4fcdb427eb9ba031" class="btn">Get Everything — $99</a>
+        </div>
+
+      </div>
+
+      <p class="pricing-note">Secure checkout via Lemon Squeezy. All prices USD. Instant delivery.</p>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════
+       6. ABOUT THE AUTHOR
+  ══════════════════════════════════════ -->
+  <section id="author" aria-labelledby="author-h">
+    <div class="container">
+      <h2 id="author-h">Who made this</h2>
+
+      <div class="author-block">
+        <p>
+          The author runs one of the heaviest Claude Code setups you will find: a multi-agent orchestration layer, 20 rule files, dozens of MCP tools and plugins, and persistent memory across sessions. The weekly cap problem was not hypothetical. It was burning time before 9am on Tuesdays.
+        </p>
+        <p>
+          Every number in this book is a direct measurement from real usage logs, or is explicitly labeled as an estimate or extrapolation — the methodology section defines all three grades. The 44% figure is transparent arithmetic on measured components, documented step by step in Chapter 11, alongside a plain list of what was never measured.
+        </p>
+        <p>
+          The fix had to work at worst-case configuration first. It did. Then it was packaged so you do not spend the same week figuring it out.
+        </p>
+      </div>
+
+      <div class="cta-group">
+        <a href="https://manna.lemonsqueezy.com/checkout/custom/bc3ee8c5-5dd8-4acb-a2d0-9ed7d3afa8eb?signature=7af0b5eae0bc4a011200e742578690fd6f5433804714c37476d47ee61d31599c" class="btn">Get Playbook + Kit — $49</a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════
+       7. FAQ
+  ══════════════════════════════════════ -->
+  <section id="faq" aria-labelledby="faq-h">
+    <div class="container">
+      <h2 id="faq-h">Questions</h2>
+
+      <details>
+        <summary>What is the refund policy?</summary>
+        <div class="faq-body">
+          <p>30-day no-questions-asked refund via Lemon Squeezy. If the numbers in this book do not match your setup in any measurable way, email for a full refund.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>How do updates and editions work?</summary>
+        <div class="faq-body">
+          <p>Each edition is a dated snapshot with a full changelog in Appendix A. T1 and T2 buyers get the edition current at time of purchase. T3 buyers receive 12 months of edition updates automatically at no additional cost — each one delivered to the same download link.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What if Anthropic changes limits again after I buy?</summary>
+        <div class="faq-body">
+          <p>That is exactly why editions exist. The limits landscape moved five times in four months (March 31, May 6, May 13, June 15, July 16) — including one announced change that was cancelled on its effective date. A dated edition with a changelog tells you exactly what changed and what to recalibrate. The core optimizations (context hygiene, model routing, cache discipline, hook enforcement) hold regardless of where the cap sits. T3 includes 12 months of updates when it moves again.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Is this affiliated with Anthropic?</summary>
+        <div class="faq-body">
+          <p>No. This is an independent publication. It is not affiliated with, endorsed by, or sponsored by Anthropic PBC in any way. Claude is a trademark of Anthropic PBC.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What format is delivery? How fast?</summary>
+        <div class="faq-body">
+          <p>T1: PDF + EPUB, delivered instantly via Lemon Squeezy download link after purchase. T2: the same ebook formats plus a ZIP containing all config files — CLAUDE.md template, hook scripts, routing configs, and measurement scripts. T3: T2 contents plus access to edition updates as they publish. Everything is plain files. No platform lock-in, no app required, works offline.</p>
+        </div>
+      </details>
+
+      <div class="cta-group">
+        <a href="https://manna.lemonsqueezy.com/checkout/custom/bc3ee8c5-5dd8-4acb-a2d0-9ed7d3afa8eb?signature=7af0b5eae0bc4a011200e742578690fd6f5433804714c37476d47ee61d31599c" class="btn">Get Playbook + Kit — $49</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+
+<!-- ══════════════════════════════════════
+     8. FOOTER
+══════════════════════════════════════ -->
+<footer>
+  <div class="container">
+
+    <div class="email-capture">
+      <p style="font-size:0.78rem; color:var(--amber-dim); margin-bottom:0.75rem;">
+        Get notified when new editions ship and when the free token-accounting table publishes.
+      </p>
+      <a class="btn" href="https://manna.lemonsqueezy.com/checkout/custom/fded167c-be76-484f-a123-ef2757d8fff1?signature=531ab289e0adef71f8376d17bcd2dd7020bedbceb6e7503ba77c947fc7e01344">Get the free Token Cost Table</a>
+    </div>
+
+    <div class="disclaimer">
+      <p>Independent publication. Not affiliated with or endorsed by Anthropic. Claude is a trademark of Anthropic PBC.</p>
+      <p>The Token Ledger — Edition 1, July 2026. All measurements sourced from real usage logs. No invented numbers.</p>
+    </div>
+
+  </div>
+</footer>
+
+</body>
+</html>
