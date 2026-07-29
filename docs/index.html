@@ -21,6 +21,8 @@
       --white:       #ffffff;
       --border:      #252525;
       --border-dim:  #1d1d1d;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
     }
 
     html { font-size: 16px; scroll-behavior: smooth; }
@@ -28,11 +30,21 @@
     body {
       background: var(--bg);
       color: var(--amber);
-      font-family: 'Courier New', Courier, monospace;
+      font-family: var(--sans);
       line-height: 1.65;
       min-height: 100vh;
       overflow-x: hidden;
     }
+
+    /* mono = brand accent only; body reads in sans */
+    h1, h2, h3, .eyebrow, .terminal, .t-header, .alert-bar,
+    table, th, td, .btn, .skip-link, .popular-badge,
+    .price-now, .price-was, .unlock-label, .ch-num, .ch-label, code, pre {
+      font-family: var(--mono);
+    }
+
+    body { font-size: 1.0625rem; }
+    p { max-width: 65ch; }
 
     /* ── Skip nav ── */
     .skip-link {
